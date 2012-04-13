@@ -1118,7 +1118,10 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
 	mttrace_workqueue_queue_work(cpu, cwq, work);
 #endif
 
-	BUG_ON(!list_empty(&work->entry));
+	if (WARN_ON(!list_empty(&work->entry))) {
+		spin_unlock_irqrestore(&gcwq->lock, flags);
+		return;
+	}
 
 	cwq->nr_in_flight[cwq->work_color]++;
 	work_flags = work_color_to_flags(cwq->work_color);
