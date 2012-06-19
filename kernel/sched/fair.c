@@ -4775,8 +4775,11 @@ more_balance:
 		if (unlikely(env.flags & LBF_ALL_PINNED)) {
 			mt_lbprof_update_state(busiest->cpu, MT_LBPROF_ALLPINNED);
 			cpumask_clear_cpu(cpu_of(busiest), cpus);
-			if (!cpumask_empty(cpus))
+			if (!cpumask_empty(cpus)) {
+				env.loop = 0;
+				env.loop_break = sched_nr_migrate_break;
 				goto redo;
+			}
 			goto out_balanced;
 		}
 		
