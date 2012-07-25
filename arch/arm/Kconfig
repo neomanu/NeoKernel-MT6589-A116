@@ -1768,10 +1768,6 @@ config HW_PERF_EVENTS
 
 source "mm/Kconfig"
 
-config ARCH_POPULATES_NODE_MAP
-	def_bool n
-	depends on MEMORY_HOTPLUG
-
 config ARCH_MEMORY_PROBE
 	def_bool n
 	depends on MEMORY_HOTPLUG
