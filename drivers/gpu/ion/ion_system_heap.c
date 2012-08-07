@@ -108,7 +108,6 @@ static void free_buffer_page(struct ion_system_heap *heap,
         }
 }
 
-
 static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
                                                  struct ion_buffer *buffer,
                                                  unsigned long size,
@@ -317,7 +316,7 @@ err_create_pool:
 err_alloc_pools:
         kfree(heap);
         return ERR_PTR(-ENOMEM);
-}
+};
 
 void ion_system_heap_destroy(struct ion_heap *heap)
 {
