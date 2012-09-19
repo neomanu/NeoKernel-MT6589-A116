@@ -387,8 +387,8 @@ void arch_send_call_function_single_ipi(int cpu)
 }
 
 static const char *ipi_types[NR_IPI] = {
-#define S(x,s)	[x - IPI_CPU_START] = s
-	S(IPI_CPU_START, "CPU start interrupts"),
+#define S(x,s)	[x] = s
+	S(IPI_WAKEUP, "CPU wakeup interrupts"),
 	S(IPI_TIMER, "Timer broadcast interrupts"),
 	S(IPI_RESCHEDULE, "Rescheduling interrupts"),
 	S(IPI_CALL_FUNC, "Function call interrupts"),
@@ -601,13 +601,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 	unsigned int cpu = smp_processor_id();
 	struct pt_regs *old_regs = set_irq_regs(regs);
 
-	if (ipinr >= IPI_CPU_START && ipinr < IPI_CPU_START + NR_IPI)
-		__inc_irq_stat(cpu, ipi_irqs[ipinr - IPI_CPU_START]);
+	if (ipinr < NR_IPI)
+		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
 
 	switch (ipinr) {
-	case IPI_CPU_START:
-		/* Wake up from WFI/WFE using SGI */
+	case IPI_WAKEUP:
 		break;
+
 	case IPI_TIMER:
         mt_trace_ISR_start(ipinr);
 		irq_enter();
