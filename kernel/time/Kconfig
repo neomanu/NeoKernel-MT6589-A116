@@ -33,3 +33,7 @@ config GENERIC_CLOCKEVENTS_BUILD
 
 config GENERIC_CLOCKEVENTS_MIN_ADJUST
 	bool
+
+# Architecture can handle broadcast in a driver-agnostic way
+config ARCH_HAS_TICK_BROADCAST
+	bool
