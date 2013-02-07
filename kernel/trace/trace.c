@@ -38,6 +38,7 @@
 #include <linux/poll.h>
 #include <linux/nmi.h>
 #include <linux/fs.h>
+#include <linux/sched/rt.h>
 
 #include "trace.h"
 #include "trace_output.h"
