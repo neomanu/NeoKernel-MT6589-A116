@@ -43,7 +43,6 @@
 #include <linux/init.h>
 #include <linux/fs.h>
 #include <linux/proc_fs.h>
-//#include <linux/smp_lock.h>
 #include <linux/pagemap.h>
 #include <linux/mtd/mtd.h>
 #include <linux/interrupt.h>
@@ -320,7 +319,7 @@ static int yaffs_link(struct dentry *old_dentry, struct inode *dir,
 				   obj);
 
 	if (link) {
-		old_dentry->d_inode->__i_nlink = yaffs_get_obj_link_count(obj);
+		set_nlink(old_dentry->d_inode, yaffs_get_obj_link_count(obj));
 		d_instantiate(dentry, old_dentry->d_inode);
 		atomic_inc(&old_dentry->d_inode->i_count);
 		yaffs_trace(YAFFS_TRACE_OS,
@@ -435,7 +434,7 @@ static int yaffs_unlink(struct inode *dir, struct dentry *dentry)
 	ret_val = yaffs_unlinker(obj, dentry->d_name.name);
 
 	if (ret_val == YAFFS_OK) {
-		dentry->d_inode->__i_nlink--;
+		drop_nlink(dentry->d_inode);
 		dir->i_version++;
 		yaffs_gross_unlock(dev);
 		mark_inode_dirty(dentry->d_inode);
@@ -446,7 +445,7 @@ static int yaffs_unlink(struct inode *dir, struct dentry *dentry)
 	return -ENOTEMPTY;
 }
 
-static int yaffs_sync_object(struct file *file,loff_t start,loff_t end, int datasync)
+static int yaffs_sync_object(struct file *file, loff_t a, loff_t b, int datasync)
 {
 
 	struct yaffs_obj *obj;
@@ -503,7 +502,7 @@ static int yaffs_rename(struct inode *old_dir, struct dentry *old_dentry,
 
 	if (ret_val == YAFFS_OK) {
 		if (target) {
-			new_dentry->d_inode->__i_nlink--;
+			drop_nlink(new_dentry->d_inode);
 			mark_inode_dirty(new_dentry->d_inode);
 		}
 
@@ -1928,7 +1927,7 @@ static void yaffs_fill_inode_from_obj(struct inode *inode,
 		inode->i_size = yaffs_get_obj_length(obj);
 		inode->i_blocks = (inode->i_size + 511) >> 9;
 
-		inode->__i_nlink = yaffs_get_obj_link_count(obj);
+		set_nlink(inode, yaffs_get_obj_link_count(obj));
 
 		yaffs_trace(YAFFS_TRACE_OS,
 			"yaffs_fill_inode mode %x uid %d gid %d size %d count %d",
@@ -2004,7 +2003,6 @@ static void yaffs_mtd_put_super(struct super_block *sb)
 	struct mtd_info *mtd = yaffs_dev_to_mtd(yaffs_super_to_dev(sb));
 
 	mtd_sync(mtd);
-
 
 	put_mtd_device(mtd);
 }
@@ -2384,7 +2382,7 @@ static struct super_block *yaffs_internal_read_super(int yaffs_version,
 
 	root = d_make_root(inode);
 
-	yaffs_trace(YAFFS_TRACE_OS, "yaffs_read_super: d_alloc_root done");
+	yaffs_trace(YAFFS_TRACE_OS, "yaffs_read_super: d_make_root done");
 
 	if (!root) {
 		iput(inode);
@@ -2407,19 +2405,17 @@ static int yaffs_internal_read_super_mtd(struct super_block *sb, void *data,
 	return yaffs_internal_read_super(1, sb, data, silent) ? 0 : -EINVAL;
 }
 
-static struct dentry *yaffs_read_super(struct file_system_type *fs,
-			    int flags, const char *dev_name,
-			    void *data)
+static struct dentry *yaffs_mount(struct file_system_type *fs, int flags,
+			const char *dev_name, void *data)
 {
-
 	return mount_bdev(fs, flags, dev_name, data,
-			   yaffs_internal_read_super_mtd);
+		yaffs_internal_read_super_mtd);
 }
 
 static struct file_system_type yaffs_fs_type = {
 	.owner = THIS_MODULE,
 	.name = "yaffs",
-	.mount = yaffs_read_super,
+	mount = yaffs_mount,
 	.kill_sb = kill_block_super,
 	.fs_flags = FS_REQUIRES_DEV,
 };
@@ -2432,7 +2428,7 @@ static int yaffs2_internal_read_super_mtd(struct super_block *sb, void *data,
 	return yaffs_internal_read_super(2, sb, data, silent) ? 0 : -EINVAL;
 }
 
-static struct dentry *yaffs2_read_super(struct file_system_type *fs,
+static struct dentry *yaffs2_mount(struct file_system_type *fs,
 			     int flags, const char *dev_name, void *data)
 {
 	return mount_bdev(fs, flags, dev_name, data,
@@ -2442,7 +2438,7 @@ static struct dentry *yaffs2_read_super(struct file_system_type *fs,
 static struct file_system_type yaffs2_fs_type = {
 	.owner = THIS_MODULE,
 	.name = "yaffs2",
-	.mount = yaffs2_read_super,
+	.mount = yaffs2_mount,
 	.kill_sb = kill_block_super,
 	.fs_flags = FS_REQUIRES_DEV,
 };

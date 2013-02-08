@@ -103,7 +103,7 @@ int nandmtd1_write_chunk_tags(struct yaffs_dev *dev,
 #endif
 
 	memset(&ops, 0, sizeof(ops));
-	ops.mode =  MTD_OPS_AUTO_OOB;
+	ops.mode = MTD_OPS_AUTO_OOB;
 	ops.len = (data) ? chunk_bytes : 0;
 	ops.ooblen = YTAG1_SIZE;
 	ops.datbuf = (u8 *) data;
@@ -156,7 +156,7 @@ int nandmtd1_read_chunk_tags(struct yaffs_dev *dev,
 	int deleted;
 
 	memset(&ops, 0, sizeof(ops));
-	ops.mode =  MTD_OPS_AUTO_OOB;
+	ops.mode = MTD_OPS_AUTO_OOB;
 	ops.len = (data) ? chunk_bytes : 0;
 	ops.ooblen = YTAG1_SIZE;
 	ops.datbuf = data;
@@ -189,7 +189,7 @@ int nandmtd1_read_chunk_tags(struct yaffs_dev *dev,
 		/* fall into... */
 	default:
 		rettags(etags, YAFFS_ECC_RESULT_UNFIXED, 0);
-		etags->block_bad = (mtd_block_isbad) (mtd, addr);
+		etags->block_bad = mtd_block_isbad(mtd, addr);
 		return YAFFS_FAIL;
 	}
 
@@ -307,7 +307,7 @@ int nandmtd1_query_block(struct yaffs_dev *dev, int block_no,
 		return YAFFS_FAIL;
 
 	retval = nandmtd1_read_chunk_tags(dev, chunk_num, NULL, &etags);
-	etags.block_bad = (mtd_block_isbad) (mtd, addr);
+	etags.block_bad = mtd_block_isbad(mtd, addr);
 	if (etags.block_bad) {
 		yaffs_trace(YAFFS_TRACE_BAD_BLOCKS,
 			"block %d is marked bad", block_no);
