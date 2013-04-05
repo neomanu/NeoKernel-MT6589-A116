@@ -63,7 +63,6 @@
 #include "compat.h"
 #endif
 #include "atags.h"
-#include "tcm.h"
 
 #ifndef MEM_SIZE
 #define MEM_SIZE	(16*1024*1024)
@@ -1012,8 +1011,6 @@ void __init setup_arch(char **cmdline_p)
 		hyp_mode_check();
 
 	reserve_crashkernel();
-
-	tcm_init();
 
 #ifdef CONFIG_MULTI_IRQ_HANDLER
 	handle_arch_irq = mdesc->handle_irq;
