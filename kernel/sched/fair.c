@@ -3329,17 +3329,16 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 #endif 
 	if (!tsk_cache_hot ||
 		env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
-#ifdef CONFIG_SCHEDSTATS
+
 		if (tsk_cache_hot) {
 			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
 			schedstat_inc(p, se.statistics.nr_forced_migrations);
 		}
-#endif
+
 		return 1;
 	}
 
-	if (tsk_cache_hot) {
-		schedstat_inc(p, se.statistics.nr_failed_migrations_hot);
+	schedstat_inc(p, se.statistics.nr_failed_migrations_hot);
 #ifdef CONFIG_MT_LOAD_BALANCE_PROFILER
 		mt_lbprof_stat_or(env->fail_reason, MT_LBPROF_CACHEHOT);
 		if(mt_lbprof_lt (env->sd->mt_lbprof_nr_balance_failed, MT_LBPROF_NR_BALANCED_FAILED_UPPER_BOUND)){
@@ -3349,9 +3348,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 			trace_sched_lbprof_log(strings);
 		}
 #endif		
-		return 0;
-	}
-	return 1;
+	return 0;
 }
 
 /*
