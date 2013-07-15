@@ -12,6 +12,7 @@
 #include <linux/debug_locks.h>
 #include <linux/delay.h>
 #include <linux/export.h>
+#include <linux/bug.h>
 
 #include <linux/aee.h>
 
@@ -66,6 +67,7 @@ static void spin_dump(raw_spinlock_t *lock, const char *msg)
 		owner ? owner->comm : "<none>",
 		owner ? task_pid_nr(owner) : -1,
 		lock->owner_cpu, lock->raw_lock.lock);
+	BUG_ON(PANIC_CORRUPTION);
 	dump_stack();
 }
 
