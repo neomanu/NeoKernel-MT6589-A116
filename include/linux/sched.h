@@ -1010,6 +1010,7 @@ struct sched_domain {
 #endif	
 
 	u64 last_update;
+	u64 max_newidle_lb_cost;
 
 #ifdef CONFIG_SCHEDSTATS
 	/* load_balance() stats */

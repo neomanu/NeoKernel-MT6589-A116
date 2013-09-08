@@ -4920,6 +4920,7 @@ void idle_balance(int this_cpu, struct rq *this_rq)
 #if defined(CONFIG_MT_LOAD_BALANCE_ENHANCEMENT) || defined(CONFIG_MT_LOAD_BALANCE_PROFILER)
 	unsigned long counter = 0;
 #endif
+	u64 curr_cost = 0;
 
 	this_rq->idle_stamp = rq_clock(this_rq);
 
@@ -4934,14 +4935,15 @@ void idle_balance(int this_cpu, struct rq *this_rq)
 	#endif
 #endif
 
-	if (this_rq->avg_idle < sysctl_sched_migration_cost){
+	if (this_rq->avg_idle < this_rq->max_idle_balance_cost)
+	{
 #if defined(CONFIG_MT_LOAD_BALANCE_PROFILER)
 		char strings[128]="";
 		mt_lbprof_update_state_has_lock(this_cpu, MT_LBPROF_ALLOW_UNBLANCE_STATE);
 		sprintf(strings, "%d:idle balance bypass: %llu %lu ", this_cpu, this_rq->avg_idle, counter);
 		mt_lbprof_rqinfo(strings);
 		trace_sched_lbprof_log(strings);
-#endif		
+#endif
 		return;
 	}
 
@@ -4960,14 +4962,29 @@ void idle_balance(int this_cpu, struct rq *this_rq)
 	for_each_domain(this_cpu, sd) {
 		unsigned long interval;
 		int balance = 1;
+		u64 t0, domain_cost, max = 5*sysctl_sched_migration_cost;
 
 		if (!(sd->flags & SD_LOAD_BALANCE))
 			continue;
 
+		if (this_rq->avg_idle < curr_cost + sd->max_newidle_lb_cost)
+			break;
+
 		if (sd->flags & SD_BALANCE_NEWIDLE) {
+			t0 = sched_clock_cpu(smp_processor_id());
+
 			/* If we've pulled tasks over stop searching: */
 			pulled_task = load_balance(this_cpu, this_rq,
 						   sd, CPU_NEWLY_IDLE, &balance);
+
+			domain_cost = sched_clock_cpu(smp_processor_id()) - t0;
+			if (domain_cost > max)
+				domain_cost = max;
+
+			if (domain_cost > sd->max_newidle_lb_cost)
+				sd->max_newidle_lb_cost = domain_cost;
+
+			curr_cost += domain_cost;
 		}
 
 		interval = msecs_to_jiffies(sd->balance_interval);
@@ -4989,6 +5006,9 @@ void idle_balance(int this_cpu, struct rq *this_rq)
 		 */
 		this_rq->next_balance = next_balance;
 	}
+
+	if (curr_cost > this_rq->max_idle_balance_cost)
+		this_rq->max_idle_balance_cost = curr_cost;
 }
 
 /*
