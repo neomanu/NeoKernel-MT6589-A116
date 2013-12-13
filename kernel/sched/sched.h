@@ -434,6 +434,7 @@ struct rq {
 	u64 max_idle_balance_cost;
 #endif
 
+	int cur_freq, max_freq, min_freq;
 	u64 cumulative_runnable_avg;
 
 #ifdef CONFIG_IRQ_TIME_ACCOUNTING
