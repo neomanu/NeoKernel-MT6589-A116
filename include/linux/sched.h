@@ -1265,11 +1265,6 @@ struct ravg {
 >>>>>>> 7a6687c... sched: window-based load stats for tasks
 struct sched_entity {
 	struct load_weight	load;		/* for load-balancing */
-	/*
-	 * Todo : Move ravg to 'struct task_struct', as this is common for both
-	 * real-time and non-realtime tasks
-	 */
-	struct ravg		ravg;
 	struct rb_node		run_node;
 	struct list_head	group_node;
 	unsigned int		on_rq;
@@ -1357,6 +1352,8 @@ struct task_struct {
 #ifdef CONFIG_CGROUP_SCHED
 	struct task_group *sched_task_group;
 #endif
+
+	struct ravg ravg;
 
 #ifdef CONFIG_PREEMPT_NOTIFIERS
 	/* list of struct preempt_notifier: */

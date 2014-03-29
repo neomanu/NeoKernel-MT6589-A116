@@ -999,6 +999,39 @@ static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
 }
 #endif /* CONFIG_FAIR_GROUP_SCHED */
 
+static inline unsigned int task_load(struct task_struct *p)
+{
+	return p->ravg.demand;
+}
+
+static inline unsigned int max_task_load(void)
+{
+	return sched_ravg_window;
+}
+
+/* Return task demand in percentage scale */
+unsigned int pct_task_load(struct task_struct *p)
+{
+	unsigned int load;
+
+	load = div64_u64((u64)task_load(p) * 100, (u64)max_task_load());
+
+	return load;
+}
+
+void init_new_task_load(struct task_struct *p)
+{
+	int i;
+	u64 wallclock = sched_clock();
+
+	p->ravg.sum			= 0;
+	p->ravg.demand			= 0;
+	p->ravg.window_start		= wallclock;
+	p->ravg.mark_start		= wallclock;
+	for (i = 0; i < RAVG_HIST_SIZE; ++i)
+		p->ravg.sum_history[i] = 0;
+}
+
 static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
 {
 #ifdef CONFIG_SCHEDSTATS
@@ -3427,6 +3460,7 @@ static int move_one_task(struct lb_env *env)
 		 * stats here rather than inside move_task().
 		 */
 		schedstat_inc(env->sd, lb_gained[env->idle]);
+
 		return 1;
 	}
 	return 0;
@@ -4731,6 +4765,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
 	cpumask_copy(cpus, cpu_active_mask);
 	max_lb_iterations = cpumask_weight(env.dst_grpmask);
 
+	per_cpu(dbs_boost_load_moved, this_cpu) = 0;
 	schedstat_inc(sd, lb_count[idle]);
 
 redo:
@@ -5114,6 +5149,8 @@ static int active_load_balance_cpu_stop(void *data)
 	struct sched_domain *sd;
 
 	raw_spin_lock_irq(&busiest_rq->lock);
+
+	per_cpu(dbs_boost_load_moved, target_cpu) = 0;
 
 	/* make sure the requested cpu hasn't gone down in the meantime */
 	if (unlikely(busiest_cpu != smp_processor_id() ||

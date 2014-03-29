@@ -732,7 +732,7 @@ static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
 	update_rq_clock(rq);
 	sched_info_queued(p);
 	p->sched_class->enqueue_task(rq, p, flags);
-	rq->cumulative_runnable_avg += p->se.ravg.demand;
+	inc_cumulative_runnable_avg(rq, p);
 }
 
 static void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
@@ -740,8 +740,7 @@ static void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
 	update_rq_clock(rq);
 	sched_info_dequeued(p);
 	p->sched_class->dequeue_task(rq, p, flags);
-	rq->cumulative_runnable_avg -= p->se.ravg.demand;
-	BUG_ON((s64)rq->cumulative_runnable_avg < 0);
+	dec_cumulative_runnable_avg(rq, p);
 }
 
 void activate_task(struct rq *rq, struct task_struct *p, int flags)
@@ -1442,6 +1441,15 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
 		wq_worker_waking_up(p, cpu_of(rq));
 }
 
+/* Window size (in ns) */
+__read_mostly unsigned int sched_ravg_window = 10000000;
+
+/* Min window size (in ns) = 10ms */
+__read_mostly unsigned int min_sched_ravg_window = 10000000;
+
+/* Max window size (in ns) = 1s */
+__read_mostly unsigned int max_sched_ravg_window = 1000000000;
+
 /*
  * Called when new window is starting for a task, to record cpu usage over
  * recently concluded window(s). Normally 'samples' should be 1. It can be > 1
@@ -1451,9 +1459,9 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
 static inline void
 update_history(struct rq *rq, struct task_struct *p, u32 runtime, int samples)
 {
-	u32 *hist = &p->se.ravg.sum_history[0];
+	u32 *hist = &p->ravg.sum_history[0];
 	int ridx, widx;
-	u32 max = 0;
+	u32 sum = 0, avg;
 
 	/* Ignore windows where task had no activity */
 	if (!runtime)
@@ -1464,38 +1472,45 @@ update_history(struct rq *rq, struct task_struct *p, u32 runtime, int samples)
 	ridx = widx - samples;
 	for (; ridx >= 0; --widx, --ridx) {
 		hist[widx] = hist[ridx];
-		if  (hist[widx] > max)
-			max = hist[widx];
+		sum += hist[widx];
 	}
 
 	for (widx = 0; widx < samples && widx < RAVG_HIST_SIZE; widx++) {
 		hist[widx] = runtime;
-		if  (hist[widx] > max)
-			max = hist[widx];
+		sum += hist[widx];
 	}
 
-	p->se.ravg.sum = 0;
+	p->ravg.sum = 0;
 	if (p->on_rq) {
-		rq->cumulative_runnable_avg -= p->se.ravg.demand;
+		rq->cumulative_runnable_avg -= p->ravg.demand;
 		BUG_ON((s64)rq->cumulative_runnable_avg < 0);
 	}
-	/*
-	 * Maximum demand seen over previous RAVG_HIST_SIZE windows drives
-	 * frequency demand for a task. Record maximum in 'demand' attribute.
-	 */
-	p->se.ravg.demand = max;
+
+	avg = sum / RAVG_HIST_SIZE;
+
+	p->ravg.demand = max(avg, runtime);
+
 	if (p->on_rq)
-		rq->cumulative_runnable_avg += p->se.ravg.demand;
+		rq->cumulative_runnable_avg += p->ravg.demand;
 }
 
-/* Window size (in ns) */
-__read_mostly unsigned int sysctl_sched_ravg_window = 50000000;
+static int __init set_sched_ravg_window(char *str)
+{
+	get_option(&str, &sched_ravg_window);
+
+	return 0;
+}
+
+early_param("sched_ravg_window", set_sched_ravg_window);
 
 void update_task_ravg(struct task_struct *p, struct rq *rq, int update_sum)
 {
-	u32 window_size = sysctl_sched_ravg_window;
+	u32 window_size = sched_ravg_window;
 	int new_window;
 	u64 wallclock = sched_clock();
+
+	if (sched_ravg_window < min_sched_ravg_window)
+		return;
 
 	do {
 		s64 delta = 0;
@@ -1503,47 +1518,50 @@ void update_task_ravg(struct task_struct *p, struct rq *rq, int update_sum)
 		u64 now = wallclock;
 
 		new_window = 0;
-		delta = now - p->se.ravg.window_start;
+		delta = now - p->ravg.window_start;
 		BUG_ON(delta < 0);
 		if (delta > window_size) {
-			p->se.ravg.window_start += window_size;
-			now = p->se.ravg.window_start;
+			p->ravg.window_start += window_size;
+			now = p->ravg.window_start;
 			new_window = 1;
 		}
 
 		if (update_sum) {
-			delta = now - p->se.ravg.mark_start;
+			unsigned int cur_freq = rq->cur_freq;
+
+			delta = now - p->ravg.mark_start;
 			BUG_ON(delta < 0);
 
-			if (likely(rq->cur_freq &&
-					rq->cur_freq <= max_possible_freq))
-				delta = div64_u64(delta  * rq->cur_freq,
+			if (unlikely(cur_freq > max_possible_freq))
+				cur_freq = max_possible_freq;
+
+			delta = div64_u64(delta  * cur_freq,
 							max_possible_freq);
-			p->se.ravg.sum += delta;
-			WARN_ON(p->se.ravg.sum > window_size);
+			p->ravg.sum += delta;
+			WARN_ON(p->ravg.sum > window_size);
 		}
 
 		if (!new_window)
 			break;
 
-		update_history(rq, p, p->se.ravg.sum, 1);
+		update_history(rq, p, p->ravg.sum, 1);
 
-		delta = wallclock - p->se.ravg.window_start;
+		delta = wallclock - p->ravg.window_start;
 		BUG_ON(delta < 0);
 		n = div64_u64(delta, window_size);
 		if (n) {
 			if (!update_sum)
-				p->se.ravg.window_start = wallclock;
+				p->ravg.window_start = wallclock;
 			else
-				p->se.ravg.window_start += n * window_size;
-			BUG_ON(p->se.ravg.window_start > wallclock);
+				p->ravg.window_start += n * window_size;
+			BUG_ON(p->ravg.window_start > wallclock);
 			if (update_sum)
 				update_history(rq, p, window_size, n);
 		}
-		p->se.ravg.mark_start =  p->se.ravg.window_start;
+		p->ravg.mark_start =  p->ravg.window_start;
 	} while (new_window);
 
-	p->se.ravg.mark_start = wallclock;
+	p->ravg.mark_start = wallclock;
 }
 
 /*
@@ -1863,8 +1881,6 @@ int wake_up_state(struct task_struct *p, unsigned int state)
  */
 static void __sched_fork(struct task_struct *p)
 {
-	int i;
-
 	p->on_rq			= 0;
 
 	p->se.on_rq			= 0;
@@ -1873,12 +1889,7 @@ static void __sched_fork(struct task_struct *p)
 	p->se.prev_sum_exec_runtime	= 0;
 	p->se.nr_migrations		= 0;
 	p->se.vruntime			= 0;
-	p->se.ravg.sum			= 0;
-	p->se.ravg.demand		= 0;
-	p->se.ravg.window_start		= 0;
-	p->se.ravg.mark_start		= 0;
-	for (i = 0; i < RAVG_HIST_SIZE; ++i)
-		p->se.ravg.sum_history[i] = 0;
+	init_new_task_load(p);
 
 	INIT_LIST_HEAD(&p->se.group_node);
 
@@ -1981,7 +1992,6 @@ void wake_up_new_task(struct task_struct *p)
 {
 	unsigned long flags;
 	struct rq *rq;
-	u64 wallclock = sched_clock();
 
 	raw_spin_lock_irqsave(&p->pi_lock, flags);
 #ifdef CONFIG_SMP
@@ -1995,8 +2005,6 @@ void wake_up_new_task(struct task_struct *p)
 
 	rq = __task_rq_lock(p);
 	activate_task(rq, p, 0);
-	p->se.ravg.window_start	= wallclock;
-	p->se.ravg.mark_start	= wallclock;
 	p->on_rq = 1;
 	trace_sched_wakeup_new(p, true);
 	check_preempt_curr(rq, p, WF_FORK);
