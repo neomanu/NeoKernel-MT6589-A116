@@ -1,0 +1,1 @@
+/home/neuvine/Documents/android/A116_4.4_kernel/kernel3/mediatek/build/kernel/Makefile

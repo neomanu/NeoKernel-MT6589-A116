@@ -1,0 +1,36 @@
+You will need to download https://github.com/bgcngm/mtk-tools to build the image.
+Save into the same directory as this one folder
+
+You will also a ramdisk.
+You can obtain one from your current kernel.
+
+You can use your own toolchain, or this one:
+https://github.com/neomanu/arm-cortex_a7-linux-gnueabi
+
+Add the 'bin/' folder of the toolchain to the $PATH env. var.
+	export PATH=$PATH:/path/to/toolchain/bin/
+	
+Set $CROSS_COMPILE
+Eg.
+	export CROSS_COMPILE=arm-eabi-
+	
+Set $ARCH
+	export ARCH=arm
+
+To clean
+	make clean
+	make mrproper
+
+To prepare .config
+Eg.
+	make nk_defconfig
+
+To build
+	make ARCH=arm SUBARCH=arm TARGET_PRODUCT=wiko TARGET_BUILD_VARIANT=user MTK_ROOT_CUSTOM=./mediatek/custom/ MTK_PROJECT=wiko
+
+After building the zImage succesfully, run
+	source Clean_build_image_modules.sh
+	
+This will give you the boot.img in 'kernel_output/wiko/'
+
+Pack this a flashable zip and flash away!
