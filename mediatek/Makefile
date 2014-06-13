@@ -1,1 +1,1 @@
-/build/kernel/Makefile
+build/kernel/Makefile
