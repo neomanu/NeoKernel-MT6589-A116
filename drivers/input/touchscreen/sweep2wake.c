@@ -234,15 +234,20 @@ void doubletap2wake_func(int x, int y, unsigned long time)
         dt2w_time[1] = dt2w_time[0];
         dt2w_time[0] = time;
 
-	if (!initial_time)
+	if (initial_time == 0)
 		initial_time = time;	
 
-	if (time - initial_time > 800)
+	if (time - initial_time > DT2W_TIMEOUT_MAX) {
 		reset_sweep2wake();
-printk("[SWEEP2WAKE]: d2w reset\n");
-	
-	if ((dt2w_time[0] - dt2w_time[1]) < 10)
+		printk("[SWEEP2WAKE]: d2w max timeout reset\n");
 		return;
+	}
+	
+	if ((dt2w_time[0] - dt2w_time[1]) < 10) {
+		reset_sweep2wake();
+		printk("[SWEEP2WAKE]: d2w min timeout reset\n");
+		return;
+	}
 printk("[SWEEP2WAKE]: checking d2w\n");
 	dt2w_x[1] = dt2w_x[0];
     dt2w_x[0] = x;
