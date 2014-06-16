@@ -743,9 +743,9 @@ static void tpd_resume(struct power_suspend *h)
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
 printk("[SWEEP2WAKE]: resume\n");
 	scr_suspended = false;
-	if (sweep2wake == 0 && doubletap2wake == 0)
+	if ((sweep2wake == 0 || sweep2wake == 3) && doubletap2wake == 0) {
 #endif
-{
+
 	if ( g_pts ){
 		CTP_DBG("TPD wake up\n");
 		if (atomic_read(&g_pts->isp_opened)){
@@ -773,13 +773,10 @@ printk("[SWEEP2WAKE]: resume\n");
         g_need_refresh_tp_flag = 1;
         
 	}
-}
+
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-	else if (sweep2wake > 0 || doubletap2wake > 0)
-	mt65xx_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM);
-#endif
-#ifdef CONFIG_POWERSUSPEND
-	//set_power_suspend_state_panel_hook(POWER_SUSPEND_INACTIVE); // Yank555.lu : add hook to handle powersuspend tasks (wakeup)
+	} else if ((sweep2wake > 0 && sweep2wake < 3) || doubletap2wake > 0)
+		mt65xx_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM);
 #endif
 }
  
@@ -803,11 +800,10 @@ static void tpd_suspend(struct power_suspend *h)
 	const char data = 0x3;
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
 	scr_suspended = true;
-printk("[SWEEP2WAKE]: power suspernd\n");
-	if (sweep2wake == 0 && doubletap2wake == 0)
+printk("[SWEEP2WAKE]: power suspend\n");
+	if ((sweep2wake == 0 || sweep2wake == 3) && doubletap2wake == 0) {
 #endif
-	{
- 
+
 	if ( g_pts ){
 		 CTP_DBG("TPD enter sleep\n");
 		if (atomic_read(&g_pts->isp_opened)){
@@ -867,13 +863,10 @@ printk("[SWEEP2WAKE]: power suspernd\n");
 #endif
 		atomic_set( &g_pts->ts_sleepState, 1 );
 	}
- } 
+
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-	else if (sweep2wake > 0 || doubletap2wake > 0)
+	} else if ((sweep2wake > 0 && sweep2wake < 3) || doubletap2wake > 0)
 		mt65xx_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM);
-#endif
-#ifdef CONFIG_POWERSUSPEND
-	//set_power_suspend_state_panel_hook(POWER_SUSPEND_ACTIVE); // Yank555.lu : add hook to handle powersuspend tasks (sleep)
 #endif
 }
 

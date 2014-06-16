@@ -80,7 +80,10 @@ int status[2] = {0,0};
 /* Read cmdline for s2w */
 static int __init read_s2w_cmdline(char *s2w)
 {
-	if (strcmp(s2w, "2") == 0) {
+	if (strcmp(s2w, "3") == 0) {
+		printk(KERN_INFO "[cmdline_s2w]: Sweep2Sleep enabled. | s2w='%s'", s2w);
+		sweep2wake = 3;
+	} else if (strcmp(s2w, "2") == 0) {
 		printk(KERN_INFO "[cmdline_s2w]: Sweep2Wake/Sweep2Sleep enabled. | s2w='%s'", s2w);
 		sweep2wake = 2;
 	} else if (strcmp(s2w, "1") == 0) {
