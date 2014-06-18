@@ -1031,7 +1031,8 @@ define filechk_utsrelease.h
 	fi;                                                               \
 	(echo \#define UTS_RELEASE \"$(KERNELRELEASE)\";                  \
 	echo \#define BUILD_INFO \"$(MTK_BUILD_VERNO)\";                  \
-	echo \#define BUILD_FINGERPRINT \"$(TARGET_PRODUCT)\";)
+	echo \#define BUILD_FINGERPRINT \"$(TARGET_PRODUCT)\";            \
+	echo \#define KERNELVERSION \"$(KERNELVERSION)\";)
 endef
 
 define filechk_version.h
