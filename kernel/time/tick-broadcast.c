@@ -553,18 +553,18 @@ void tick_broadcast_oneshot_control(unsigned long reason)
 	if (reason == CLOCK_EVT_NOTIFY_BROADCAST_ENTER) {
 		WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
 		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_oneshot_mask)) {
-				clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
-				/*
-				 * We only reprogram the broadcast timer if we
-				 * did not mark ourself in the force mask and
-				 * if the cpu local event is earlier than the
-				 * broadcast event. If the current CPU is in
-				 * the force mask, then we are going to be
-				 * woken by the IPI right away.
-				 */
-				if (!cpumask_test_cpu(cpu, tick_broadcast_force_mask) &&
-				    dev->next_event.tv64 < bc->next_event.tv64)
-					tick_broadcast_set_event(dev->next_event, 1);
+			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
+			/*
+			 * We only reprogram the broadcast timer if we
+			 * did not mark ourself in the force mask and
+			 * if the cpu local event is earlier than the
+			 * broadcast event. If the current CPU is in
+			 * the force mask, then we are going to be
+			 * woken by the IPI right away.
+			 */
+			if (!cpumask_test_cpu(cpu, tick_broadcast_force_mask) &&
+			    dev->next_event.tv64 < bc->next_event.tv64)
+				tick_broadcast_set_event(dev->next_event, 1);
 		}
 	} else {
 		if (cpumask_test_and_clear_cpu(cpu, tick_broadcast_oneshot_mask)) {
