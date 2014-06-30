@@ -4765,7 +4765,6 @@ static int load_balance(int this_cpu, struct rq *this_rq,
 	cpumask_copy(cpus, cpu_active_mask);
 	max_lb_iterations = cpumask_weight(env.dst_grpmask);
 
-	per_cpu(dbs_boost_load_moved, this_cpu) = 0;
 	schedstat_inc(sd, lb_count[idle]);
 
 redo:
@@ -5149,8 +5148,6 @@ static int active_load_balance_cpu_stop(void *data)
 	struct sched_domain *sd;
 
 	raw_spin_lock_irq(&busiest_rq->lock);
-
-	per_cpu(dbs_boost_load_moved, target_cpu) = 0;
 
 	/* make sure the requested cpu hasn't gone down in the meantime */
 	if (unlikely(busiest_cpu != smp_processor_id() ||
