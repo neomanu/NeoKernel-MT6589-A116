@@ -3763,7 +3763,7 @@ static unsigned long scale_rt_power(int cpu)
 	struct rq *rq = cpu_rq(cpu);
 	u64 total, available;
 
-	total = sched_avg_period() + (rq_clock(rq) - age_stamp);
+	total = sched_avg_period() + (rq_clock(rq) - rq->age_stamp);
 
 	if (unlikely(total < rq->rt_avg)) {
 		/* Ensures that power won't end up being negative */
@@ -4577,7 +4577,7 @@ redo:
 		env.flags |= LBF_ALL_PINNED;
 		env.src_cpu   = busiest->cpu;
 		env.src_rq    = busiest;
-		env.loop_max  = min_t(sysctl_sched_nr_migrate,
+		env.loop_max  = min(sysctl_sched_nr_migrate,
 					busiest->cfs.h_nr_running);
 #ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
 		env.mt_check_cache_in_idle = 1;

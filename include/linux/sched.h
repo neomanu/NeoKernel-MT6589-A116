@@ -1215,7 +1215,6 @@ struct ravg {
 	u32 sum_history[RAVG_HIST_SIZE];
 };
 
->>>>>>> 7a6687c... sched: window-based load stats for tasks
 struct sched_entity {
 	struct load_weight	load;		/* for load-balancing */
 	struct rb_node		run_node;
