@@ -245,6 +245,7 @@ ssize_t seq_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
 		p = m->op->start(m, &pos);
 	}
 	m->op->stop(m, p);
+	m->count = 0;
 	goto Done;
 Fill:
 	/* they want more? let's try to get some more */
