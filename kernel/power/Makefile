@@ -40,7 +40,6 @@ obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
 				   block_io.o
 
 obj-$(CONFIG_POWERSUSPEND)	+= powersuspend.o
->>>>>>> eec790e... powersuspend: new PM kernel driver for Android w/o early_suspend
 obj-$(CONFIG_PM_AUTOSLEEP)	+= autosleep.o
 obj-$(CONFIG_PM_WAKELOCKS)	+= wakelock.o
 obj-$(CONFIG_SUSPEND_TIME)	+= suspend_time.o
