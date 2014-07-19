@@ -47,7 +47,13 @@ struct ion_buffer *ion_handle_buffer(struct ion_handle *handle);
  * @sg_table:		the sg table for the buffer if dmap_cnt is not zero
  * @pages:		flat array of pages in the buffer -- used by fault
  *			handler and only valid for buffers that are faulted in
- */
+ * @vmas:		list of vma's mapping this buffer
+ * @handle_count:	count of handles referencing this buffer
+ * @task_comm:		taskcomm of last client to reference this buffer in a
+ *			handle, used for debugging
+ * @pid:		pid of last client to reference this buffer in a
+ *			handle, used for debugging
+*/
 struct ion_buffer {
 	struct kref ref;
 	union {
