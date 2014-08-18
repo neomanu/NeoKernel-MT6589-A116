@@ -38,7 +38,7 @@
 * glabal variable
 **********************************/
 #ifdef CONFIG_POWERSUSPEND
-static int g_enable = 1;
+static int g_enable = 0;
 static struct power_suspend mt_hotplug_mechanism_power_suspend_handler =
 {
     //.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 250,
