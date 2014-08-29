@@ -8,8 +8,6 @@ static bool mt_keep_freq_non_od_set = false;
 
 #define MTK_GPU_DVFS 1
 
-#define MTK_FORCE_T
-
 #if MTK_GPU_DVFS
 static struct mt_gpufreq_info freqs_special_vrf18_2[] = {
     {GPU_DVFS_F3, 40, 100, GPU_POWER_VRF18_1_15V, 100},
@@ -57,10 +55,11 @@ PVRSRV_ERROR MTKSetFreqInfo(unsigned int freq, unsigned int tbltype)
 {
 
     printk(" freq= %d", freq);
-//#if defined(MTK_FORCE_T)
+    tbltype = TBLTYPE0;
+#if defined(MTK_FORCE_T)
     freq = GPU_DVFS_F2;
     tbltype = TBLTYPE2;
-//#endif
+#endif
 #if defined(MTK_FORCE_M)
     freq = GPU_DVFS_F7;
     tbltype = TBLTYPE0;
@@ -84,7 +83,6 @@ PVRSRV_ERROR MTKSetFreqInfo(unsigned int freq, unsigned int tbltype)
     }
 //        mt_gpufreq_keep_frequency_non_OD_init(GPU_KEEP_FREQ_NON_OD_BYPASS, GPU_KEEP_VOLT_NON_OD_BYPASS);
 
-    tbltype = TBLTYPE0;
     MtkInitSetFreqTbl(tbltype);
 
     return PVRSRV_OK;
