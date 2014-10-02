@@ -352,15 +352,16 @@ CHECK		= sparse
 
 OPTFLAGS	= -mcpu=cortex-a7 -mfpu=neon-vfpv4 \
 			-ffast-math -fsingle-precision-constant \
-			-fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr
+			-fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr \
+			-funsafe-math-optimizations -marm
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   = $(OPTFLAGS)
-AFLAGS_MODULE   = $(OPTFLAGS)
+CFLAGS_MODULE   = -DMODULE $(OPTFLAGS)
+AFLAGS_MODULE   = -DMODULE $(OPTFLAGS)
 LDFLAGS_MODULE  =
 CFLAGS_KERNEL	= $(OPTFLAGS)
-AFLAGS_KERNEL	= $(OPTFLAGS)
+AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
 
@@ -378,7 +379,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -fno-delete-null-pointer-checks \
-		   -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=softfp
+		   -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=softfp \
+		   -funsafe-math-optimizations -ffast-math -marm
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
